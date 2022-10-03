@@ -1,5 +1,6 @@
 require "open-uri"
 require "json"
+# require "twilio-ruby"
 
 line_width = 40
 
@@ -8,34 +9,24 @@ puts "Will you need an umbrella today?".center(line_width)
 puts "="*line_width
 puts
 puts "Where are you?"
-user_location = gets.chomp
-# user_location = "Saint Paul"
+# user_location = gets.chomp
+user_location = "Saint Paul"
 puts "Checking the weather at #{user_location}...."
 
 # Get the lat/lng of location from Google Maps API
 
-gmaps_key = "AIzaSyAgRzRHJZf-uoevSnYDTf08or8QFS_fb3U"
+require "./gmaps_wrapper.rb"
 
-gmaps_url = "https://maps.googleapis.com/maps/api/geocode/json?address=#{user_location}&key=#{gmaps_key}"
+x = GmapsWrapper.address_to_coords(user_location)
 
-# p "Getting coordinates from:"
-# p gmaps_url
+latitude = x.fetch("lat")
+longitude = x.fetch("lng")
 
-raw_gmaps_data = URI.open(gmaps_url).read
+GmapsWrapper.address_to_coords(user_location)
 
-parsed_gmaps_data = JSON.parse(raw_gmaps_data)
+# latitude = location_hash.fetch("lat")
 
-results_array = parsed_gmaps_data.fetch("results")
-
-first_result_hash = results_array.at(0)
-
-geometry_hash = first_result_hash.fetch("geometry")
-
-location_hash = geometry_hash.fetch("location")
-
-latitude = location_hash.fetch("lat")
-
-longitude = location_hash.fetch("lng")
+# longitude = location_hash.fetch("lng")
 
 puts "Your coordinates are #{latitude}, #{longitude}."
 
@@ -93,6 +84,26 @@ next_twelve_hours.each do |hour_hash|
     puts "In #{hours_from_now.round} hours, there is a #{(precip_prob * 100).round}% chance of precipitation."
   end
 end
+
+# Send a text message
+
+# TWILIO_ACCOUNT_SID : AC28922e0822d827ee29834fe1dc6f681e
+# TWILIO_AUTH_TOKEN : 1560b96faf1c13419b9f3db964d8c5c7
+# TWILIO_SENDING_PHONE_NUMBER : +13126636198
+
+require "twilio-ruby"
+
+twilio_client = Twilio::REST::Client.new("AC28922e0822d827ee29834fe1dc6f681e", "1560b96faf1c13419b9f3db964d8c5c7")
+
+# Craft your SMS as a Hash literal with three keys
+
+sms_info = {
+  :from => "+13126636198",
+  :to => "+15719694493", # Put your own phone number here if you want to see it in action
+  :body => "It's going to rain today — take an umbrella!"
+}
+
+twilio_client.api.account.messages.create(sms_info)
 
 if any_precipitation == true
   puts "You might want to take an umbrella!"
