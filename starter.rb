@@ -24,15 +24,11 @@ longitude = x.fetch("lng")
 
 GmapsWrapper.address_to_coords(user_location)
 
-# latitude = location_hash.fetch("lat")
-
-# longitude = location_hash.fetch("lng")
-
 puts "Your coordinates are #{latitude}, #{longitude}."
 
 # Get the weather from Dark Sky API
 
-dark_sky_key = "26f63e92c5006b5c493906e7953da893"
+dark_sky_key = ENV.fetch("DARK_SKY_KEY")
 
 dark_sky_url = "https://api.darksky.net/forecast/#{dark_sky_key}/#{latitude},#{longitude}"
 
@@ -87,23 +83,46 @@ end
 
 # Send a text message
 
-# TWILIO_ACCOUNT_SID : AC28922e0822d827ee29834fe1dc6f681e
-# TWILIO_AUTH_TOKEN : 1560b96faf1c13419b9f3db964d8c5c7
-# TWILIO_SENDING_PHONE_NUMBER : +13126636198
-
 require "twilio-ruby"
 
-twilio_client = Twilio::REST::Client.new("AC28922e0822d827ee29834fe1dc6f681e", "1560b96faf1c13419b9f3db964d8c5c7")
+twilio_sid = ENV.fetch("TWILIO_ACCOUNT_SID")
+twilio_token = ENV.fetch("TWILIO_AUTH_TOKEN")
+phone_number = ENV.fetch("MY_PHONE_NUMBER")
+source_number = ENV.fetch("MY_SOURCE_NUMBER")
+
+twilio_client = Twilio::REST::Client.new(twilio_sid, twilio_token)
 
 # Craft your SMS as a Hash literal with three keys
 
 sms_info = {
-  :from => "+13126636198",
-  :to => "+15719694493", # Put your own phone number here if you want to see it in action
+  :from => source_number,
+  :to => phone_number, # Put your own phone number here if you want to see it in action
   :body => "It's going to rain today — take an umbrella!"
 }
 
 twilio_client.api.account.messages.create(sms_info)
+
+require "mailgun-ruby"
+
+# Get your credentials from your Mailgun dashboard, or from Canvas if you're using mine
+mg_api_key = ENV.fetch("MAILGUN_API_KEY")
+mg_sending_domain = ENV.fetch("MAILGUN_SENDING_DOMAIN")
+email_address = ENV.fetch("MY_EMAIL_ADDRESS")
+source_email = ENV.fetch("MY_SOURCE_EMAIL")
+
+# Create an instance of the Mailgun Client and authenticate with your API key
+mg_client = Mailgun::Client.new(mg_api_key)
+
+# Craft your email as a Hash literal with these four keys
+email_info =  { 
+  :from => source_email,
+  :to => email_address,  # Put your own email address here if you want to see it in action
+  :subject => "Take an umbrella today!",
+  :text => "It's going to rain today, take an umbrella with you!"
+}
+
+# Send your email!
+mg_client.send_message(mg_sending_domain, email_info)
 
 if any_precipitation == true
   puts "You might want to take an umbrella!"
